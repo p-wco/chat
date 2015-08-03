@@ -1,0 +1,336 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Socket.IO chat</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font: 13px Helvetica, Arial; background-color: yellowgreen;}
+      form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
+      form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
+      form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
+      #messages { list-style-type: none; margin: 0; padding: 0; }
+      #messages li { padding: 5px 10px; }
+      #messages li:nth-child(odd) { background: #eee; }
+      #top {
+      	z-index: 100;
+	    width: 100%;
+	    position: fixed;
+	    top: 0;
+	    border-bottom: 1px solid #e7e7e7;
+	    background-color: rgba(255,255,255,0.5);
+	    text-align: center;
+      }
+      #conver {
+      	float:left;
+      	width:600px;
+      	height:250px;
+      	overflow:scroll-y;
+      	padding:10px;
+      	margin-top:20px;
+      	margin-left: 130px;
+      }
+      #roombox {
+      	float: left;
+	    min-width: 130px;
+	    border-right: 1px dashed #888;
+	    height: 100%;
+	    padding: 10px;
+	    overflow: scroll-y;
+	    margin-top: 20px;
+	    position: fixed;
+	    background-color: rgba(200,200,200,0.4);
+	    color: #333;
+	    text-shadow: 1px 1px 4px #777;
+	    text-align: center;
+      }
+      #userlista {
+      	float: right;
+	    min-width: 125px;
+	    border-left: 1px dashed #888;
+	    height: 100%;
+	    padding: 10px;
+	    overflow: scroll-y;
+	    margin-top: 20px;
+	    position: fixed;
+	    right: 0px;
+	    background-color: rgba(200,200,200,0.3);
+	    color: #222;
+	    text-shadow: 1px 1px 1px #777;
+	    text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+<script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
+<script src="http://code.jquery.com/jquery-1.11.1.js"></script>
+<script>
+
+/*
+
+
+
+The following code works with Socket.IO 1.0, however I'm not sure that this is the best solution:
+
+if (io.sockets.connected[socket.id]) {
+    io.sockets.connected[socket.id].disconnect();
+}
+Update:
+
+With Socket.IO 0.9 the code would be slightly different:
+
+if (io.sockets.sockets[socket.id]) {
+    io.sockets.sockets[socket.id].disconnect();
+}
+
+
+socket.set('nickname', name, function () {
+  socket.emit('ready');
+});
+
+socket.get('nickname', function (err, name) {
+  console.log('Chat message by ', name);
+});
+
+
+
+
+
+function timeConverter(UNIX_timestamp){
+  var a = new Date(UNIX_timestamp * 1000);
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var year = a.getFullYear();
+  var month = months[a.getMonth()];
+  var date = a.getDate();
+  var hour = a.getHours();
+  var min = a.getMinutes();
+  var sec = a.getSeconds();
+  var time = date + ' ' + month + ' ' + year + ' ' + hour + ':' + min + ':' + sec ;
+  return time;
+}
+
+
+
+*/
+
+
+	//var socket = io.connect('http://localhost:3000');
+	 var socket = io();
+	 var croom = 'Londyn';
+	 var myname;
+	 var ile_w_kanale = 0;
+	 var ownKanal = {};
+	// on connection to server, ask for user's name with an anonymous callback
+	socket.on('connect', function(){
+		myname = prompt("What's your name?");
+		// call the server-side function 'adduser' and send one parameter (value of prompt)
+		socket.emit('adduser', myname);
+	});
+
+	// listener, whenever the server emits 'updatechat', this updates the chat body
+	socket.on('updatechat', function (username, data) {
+		var now = new Date();
+		var epoch_millis = now.getTime();
+
+		var date = new Date(epoch_millis);
+		// hours part from the timestamp
+		var hours = date.getHours();
+		// minutes part from the timestamp
+		var minutes = "0" + date.getMinutes();
+		// seconds part from the timestamp
+		var seconds = "0" + date.getSeconds();
+
+		// will display time in 10:30:23 format
+		var formattedTime = hours + ':' + minutes.substr(-2) + ':' + seconds.substr(-2);
+
+		// $('#conversation').prepend(myname + ' <- myname '+croom + '# <b>'+username + ':</b> ' + data + '<br>');
+			data = data.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+			$('#conversation').prepend(formattedTime+' <b>'+username + ':</b> ' + data + '<br>');
+	});
+
+	socket.on('sendListO', function (data) {
+		JSON.parse(data, function(k, v) {
+
+			return v;
+		});
+	});
+
+	socket.on('sendListR', function (data) {
+		var JP = JSON.parse(data);
+
+		$('#UsersList').empty();
+		 //$('#conversation').prepend('***** MAM sendListR<br>');
+		 ile_w_kanale = 0;
+
+
+		JSON.parse(data, function(k, v) { // k -name v-number
+			// $('#conversation').prepend('***** MAM sendListR 2<br>');
+			// $('#conversation').prepend('<br>****** '+croom+' **********');
+			// 	  $('#conversation').prepend('<br>k: '+k); // log the current property name, the last is "".
+			// 	  $('#conversation').prepend('<br>v: '+v);
+			// 	  $('#conversation').prepend('<br>****************<br>');
+			if(k !=='' ){
+				// $('#conversation').prepend('***** MAM sendListR 3<br>');
+
+				  if(v == croom){
+				  	ile_w_kanale++;
+				  	// $('#conversation').prepend('***** MAM sendListR 4<br>');
+				  	//$('#conversation').prepend('#'+croom+' -> <b>'+k+'</b><br>');
+				  	$('#ileP').html("<b>People</b> "+ ile_w_kanale +"<br>");
+				  	//$('#ileP').append('kkk<b> ' + k + '</b><br>');
+				  	if(ile_w_kanale == 1 && k == myname){
+				  		ownKanal[croom] = myname;
+				  		//$('#conversation').prepend('-== '+JSON.stringify(ownKanal)+' --==');
+				  	} 
+
+				  	if(ownKanal[croom]==k){
+				  		$('#UsersList').append('<b> @<span class="' + k + '">' + k + '</span></b><br>');
+				  	} else{
+				  		$('#UsersList').append('<b> <span class="' + k + '">' + k + '</span></b><br>');
+				  	}
+
+				  	// $('#UsersList').append('<b> ' + k + '</b><br>');
+				  }
+
+			}
+		 // if(k !=='') $('#UsersList').prepend('<b> ' + k + '</b><br>');
+		  return v;       // return the unchanged property value.
+		});
+
+		 //$('#conversation').prepend('<b>users :</b> ' + JSON.stringify(JP) + '<br>');
+	});
+
+	socket.on('sendList', function (data) {
+		//var JP = JSON.parse(data);
+		
+	
+		//////$('#UsersList').empty();
+		JSON.parse(data, function(k, v) { // k -name v-number
+
+			if(k !==''){
+				// if ($('.sieja').length ) {
+				// 	//alert('s');
+				//     //$('#conversation').prepend('<br>---000---**********');
+				//     $('.sieja').attr('data-tid',v);
+				// }
+				// $('.'+k).attr('data-tid','kvqqqqqq');
+				//$('#UsersList').find('.'+k).attr('data-tid',v);
+
+				$("body").delegate("body", "load", function(){
+				  	
+						$('.'+k).attr('data-tid',v);
+						
+				});
+
+			
+				  //$('.sieja').attr('data-tid',v);
+				  $('#conversation').prepend('<br>****************');
+				  $('#conversation').prepend('<br>k: '+k); // log the current property name, the last is "".
+				  $('#conversation').prepend('<br>v: '+v);
+				  $('#conversation').prepend('<br>****************<br>');
+			}
+		  //usersList[v] = k;
+		  //console.log(usersList);
+		  ////////if(k !=='') $('#UsersList').prepend('<b> ' + k + '</b><br>');
+		  return v;       // return the unchanged property value.
+		});
+		$('.sieja').attr('data-tid','dupa');
+		 //$('#conversation').prepend('<b>users :</b> ' + JSON.stringify(JP) + '<br>');
+	});
+
+	socket.on('sendListIp', function (data) {
+		$('#conversation').prepend('<br>****************');
+		JSON.parse(data, function(k, v) { // k -name v-number
+
+			if(k !==''){
+
+				  
+				  $('#conversation').prepend('k: '+k+' v: '+v+'<br>'); // log the current property name, the last is "".
+				  //$('#conversation').prepend('<br>v: '+v);
+				  
+			}
+		  return v;       // return the unchanged property value.
+		});
+		$('#conversation').prepend('<br>****************<br><br>');
+	});
+
+	// listener, whenever the server emits 'updaterooms', this updates the room the client is in
+	socket.on('updaterooms', function(rooms, current_room) {
+		
+		if(current_room !=''){
+			$('#rooms').empty();
+			croom = current_room;
+			$.each(rooms, function(key, value) {
+				if(value == current_room){
+					// $('#rooms').append('<div>' + value + '</div>');
+					$('#rooms').prepend('<div>' + value + '</div>');
+				}
+				else {
+					$('#rooms').prepend('<div><a href="#" onclick="switchRoom(\''+value+'\')">' + value + '</a></div>');
+				}
+			});
+		} else {
+			$('#rooms').empty();
+			//croom = current_room;
+			$.each(rooms, function(key, value) {
+				if(value == croom){
+					// $('#rooms').append('<div>' + value + '</div>');
+					$('#rooms').prepend('<div>' + value + '</div>');
+				}
+				else {
+					$('#rooms').prepend('<div><a href="#" onclick="switchRoom(\''+value+'\')">' + value + '</a></div>');
+				}
+			});
+		}
+	});
+
+	function switchRoom(room){
+		socket.emit('switchRoom', room);
+		croom = room;
+	}
+
+	// on load of page
+	$(function(){
+		// when the client clicks SEND
+		$('#datasend').click( function() {
+			var message = $('#data').val();
+			$('#data').val('');
+			// tell server to execute 'sendchat' and send along one parameter
+			if(message !='') socket.emit('sendchat', message);
+			
+			$('.datasend').focus();
+		});
+
+		// when the client hits ENTER on their keyboard
+		$('.data').keypress(function(e) {
+			if(e.which == 13) {
+				$(this).blur();
+				$('.datasend').focus().click();
+				$(this).focus();
+			}
+		});
+	});
+
+</script>
+<div id="roombox">
+	<b>ROOMS</b>
+	<div id="rooms"></div>
+</div>
+<div id="top">
+	<input id="data" style="width:200px;" class="data" />
+	<input type="button" id="datasend" value="send" class="datasend"/>
+</div>
+<div id="conver">
+	<!-- <input id="data" style="width:200px;" class="data" />
+	<input type="button" id="datasend" value="send" class="datasend"/> -->
+	<div id="conversation"></div>
+</div>
+
+<div id="userlista">
+	<div id="ileP" class="ileP"> <b>People :P</b> <br> </div>
+	<div id="UsersList" class="UsersList">
+		
+	</div>
+</div>
+
+</body>
+</html>
